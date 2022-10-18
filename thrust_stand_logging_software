@@ -1,0 +1,75 @@
+import tkinter as tk
+import serial
+#Will need these bottom two imports to plot/display realtime data
+#import matplotlib.pyplot as plt
+#import matplotlib.animation as animation
+
+
+#Set up Arduino 
+port = '/dev/cu.usbmodem11201' #You can find the port on the bottom right of
+baud_rate = 115200 #Idk it just has to match the Arduino's code (Prolly use 115200 or 9600 for now)
+#arduino = serial.Serial(port, baud_rate)
+
+WINDOW_WIDTH = "1000"
+WINDOW_HEIGHT = "900"
+
+class Thrust_Gui:
+    def __init__(self, window):
+        #Create the main window
+        self.window = window 
+        self.title = window.title("Thrust Stand Controller")
+        self.size = window.geometry(WINDOW_WIDTH + "x" + WINDOW_HEIGHT)
+
+        #Create buttons + etc
+        self.start_button = tk.Button(window, command = self.foo)
+
+
+        self.start_button.config(width = 50, height = 20)
+
+
+        self.start_button.place(relx = 0.2, rely = 0.2)
+
+
+    #Create more funtions idk
+    def foo(self):
+        pass
+
+
+
+
+        
+
+
+#Run code lol
+root = tk.Tk()
+app = Thrust_Gui(root)
+root.mainloop()
+
+
+
+'''
+
+def slider_changed(slider): #Whenever the slider gets changed
+    string = 'X{0:d}'.format(slider_x.get()) #format it as like X100Y100 the numbers are slider.get() which gets the value of the slider
+    #print(string)
+    arduino.write(string.encode('utf-8')) #send the string to the arduino
+
+
+slider_x = Scale(window, from_ = 0, to = 180, orient= 'vertical', command = slider_changed, length = 200) #x slider
+
+
+string = '1234567'
+
+
+
+slider_x.pack()
+
+
+window.bind("<Left>", lambda e: slider_x.set(slider_x.get()-10))
+window.bind("<Right>", lambda e: slider_x.set(slider_x.get()+10))
+
+
+window.mainloop()
+'''
+
+
