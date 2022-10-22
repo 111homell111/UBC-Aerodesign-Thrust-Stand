@@ -8,8 +8,10 @@
 '''-----------------Import Libraries----------------'''
 import tkinter as tk
 from tkinter import ttk
+from tkinter import simpledialog
 import serial
 import os
+from openpyxl import Workbook
 
 #Will need these bottom two imports to plot/display realtime data
 #import matplotlib.pyplot as plt
@@ -24,8 +26,10 @@ baud_rate = 115200 #Idk it just has to match the Arduino's code (Prolly use 1152
 
 
 '''-------------------??? :D---------------------'''
-FOLDER = '/Users/ellayan/EllaPG/UBCAeroDesign /GitHub/UBC-Aerodesign-Thrust-Stand'
-FILELIST = [fname for fname in os.listdir(FOLDER) if fname.endswith('.txt')]
+__location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+INPUTLIST = [fname for fname in os.listdir(__location__) if fname.endswith('.txt')]
+OUTPUTLIST = [fname for fname in os.listdir(__location__) if fname.endswith('.xlsx')]
 WINDOW_WIDTH = "1000"
 WINDOW_HEIGHT = "800"
 BUTTON_HEIGHT = 3
@@ -36,6 +40,10 @@ MODES = ["Automatic", "Manual", "Timed"]
 '''------The Real Stuff--------'''
 class Thrust_Gui:
     def __init__(self, window):
+        self.mode = MODES[0]
+
+
+
         '''-------------Create Main Window-------------'''
         self.window = window 
         self.title = window.title("Thrust Stand Controller")
@@ -43,19 +51,25 @@ class Thrust_Gui:
 
 
         '''------------------Create Widgets-----------------'''
-        self.file_menu = ttk.Combobox(window, values = FILELIST, state="readonly", width = BUTTON_WIDTH + 1,)
+        self.file_menu = ttk.Combobox(window, values = INPUTLIST, state="readonly", width = BUTTON_WIDTH + 1,)
+        self.output_menu = ttk.Combobox(window, values = OUTPUTLIST, state="readonly", width = BUTTON_WIDTH + 1,)
+
         self.mode_value = tk.StringVar(window)
-        self.mode_value.set(MODES[0])
+        self.mode_value.set(self.mode)
         self.select_mode = tk.OptionMenu(window, self.mode_value, *MODES, command = self.change_mode)
-        self.manual_button = tk.Button(window, command = self.foo)
-        self.motor_slider = tk.Scale(window, from_ = 0, to = 180, orient = 'vertical', command = self.slider, length = 200, label = "Motor")
-        self.start_button = tk.Button(window, command = self.foo, text = "Start" )
+
+        
+        #self.manual_button = tk.Button(window, command = self.foo)
+        self.start_button = tk.Button(window, command = self.start, text = "Start" )
+        self.motor_slider = tk.Scale(window, from_ = 0, to = 180, orient = 'vertical', command = self.send_throttle, length = 200, label = "Motor")
+       
         #self.STOP_button
         #self.input_button
         #self.output_button
         #self.auto
         #self.curve
         #self.runtime
+        
 
 
         '''------------------Format Widgets-------------------'''
@@ -67,28 +81,69 @@ class Thrust_Gui:
         self.file_menu.place(relx = 0.05, rely = 0.3)
         self.motor_slider.place(relx = 0.40, rely = 0.3)
         self.start_button.place(relx = 0.05, rely = 0.15)
+        self.output_menu.place(relx = 0.05, rely = 0.5)
+
 
 
     '''-------------------Create Functions------------------'''
-    def foo(self):
-        pass
+    def start(self):
+        '''
+        Run a series of start checks, if passed, run test
+        '''
 
-    def manual(self):
-        pass 
+        if self.mode == 'Automatic':
+            if self.file_menu.get() == '':
+                tk.messagebox.showinfo (title = 'Error', message = 'No input file selected!', icon = 'warning')
+                return 0
+            input_file = open(os.path.join(__location__, self.file_menu.get()), 'r')
+            input_list = [line .rstrip('\n') for line in input_file.readlines()] 
 
-    def change_mode(self, mode):
-        #Unrelated by when do I use a switch statement over elif
-        if mode == MODES[0]:
+            for line in input_list:
+                self.single_test(line)
+        #run AND record
+
+        #write
+
+    def single_test(self, line):
+        throttle = line[:3]
+        duration = line[3:]
+        self.send_throttle(throttle)
+        
+
+
+
+
+
+    def stop(self):
+        '''
+        Tell Arduino to turn thrust to zero
+        '''
+        string = 'X0'
+        #arduino.write(string.encode('utf-8'))
+        
+
+
+    def change_mode(self, new_mode):
+        '''
+        Should turn certain widgets on and off based on test mode
+        '''
+
+        if new_mode == MODES[0]:
             self.file_menu["state"] = "readonly"
-        elif mode == MODES[1]:
+        elif new_mode == MODES[1]:
             self.file_menu["state"] = "disabled"
-        elif mode == MODES[2]:
+        elif new_mode == MODES[2]:
             self.file_menu["state"] = "disabled"
-            
-    def slider(self):
-        string = 'X{0:d}Y{1:d}'.format(self.motor_slider.get())
+        self.mode = new_mode
+        
+    def send_throttle(self, throttle):
+        throttle = int(throttle) #for slider LOL or like just in case ig :) i would prefer to just pass ints... should i>??????
+        string = 'X{0:d}'.format(throttle)
         #arduino.write(string.encode('utf-8'))
 
+    def save(self):
+        pass
+        #write to file lmfaooooo
 
 '''------------------Run Code---------------'''
 root = tk.Tk()
@@ -98,8 +153,35 @@ root.mainloop()
 
 
 '''
+left and right arrow key to control sldier
 window.bind("<Left>", lambda e: slider_x.set(slider_x.get()-10))
 window.bind("<Right>", lambda e: slider_x.set(slider_x.get()+10))
 '''
 
+
+'''
+create a pop up window
+    def save(self):
+        popup = tk.Tk()
+        popup.wm_title("!")
+        label = ttk.Label(popup, text=msg, font=NORM_FONT)
+        label.pack(side="top", fill="x", pady=10)
+        B1 = ttk.Button(popup, text="Okay", command = popup.destroy)
+        B1.pack()
+        popup.mainloop()
+        '''
+
+'''
+          if self.output_menu.get() == '':
+                self.no_output_message = tk.messagebox.askquestion(title = 'Warning', message = 'No output file selected. Proceed anyway? (Will create a new file)', icon = 'info')
+                if self.no_output_message == 'No':
+                    return 0
+                elif self.no_output_message == 'Yes':
+                    output_name = simpledialog.askstring(title = 'File Name', message = 'Please name your file (omit.xlsx)')
+                    #IDK?????? LMAOOOO
+                    
+'''
+
+
+                #Unrelated by when do I use a switch statement over elif
 
