@@ -1,17 +1,22 @@
 '''
     Purpose: I hate APSC 160
     Purpose: Control thrust stand dfj;;lkafslkjfjdkla;fadf;jdsfj;ksfjk;la
+
 '''
 
 
 
 '''-----------------Import Libraries----------------'''
+from curses import window
 import tkinter as tk
 from tkinter import ttk
 from tkinter import simpledialog
 import serial
 import os
 from openpyxl import Workbook
+import time
+
+
 
 #Will need these bottom two imports to plot/display realtime data
 #import matplotlib.pyplot as plt
@@ -21,7 +26,7 @@ from openpyxl import Workbook
 '''---------------Set Up Arduino -----------------'''
 port = '/dev/cu.usbmodem11201' #You can find the port on the bottom right of
 baud_rate = 115200 #Idk it just has to match the Arduino's code (Prolly use 115200 or 9600 for now)
-#arduino = serial.Serial(port, baud_rate)
+arduino = serial.Serial(port, baud_rate)
 
 
 
@@ -43,7 +48,6 @@ class Thrust_Gui:
         self.mode = MODES[0]
 
 
-
         '''-------------Create Main Window-------------'''
         self.window = window 
         self.title = window.title("Thrust Stand Controller")
@@ -61,14 +65,18 @@ class Thrust_Gui:
         
         #self.manual_button = tk.Button(window, command = self.foo)
         self.start_button = tk.Button(window, command = self.start, text = "Start" )
-        self.motor_slider = tk.Scale(window, from_ = 0, to = 180, orient = 'vertical', command = self.send_throttle, length = 200, label = "Motor")
+        self.motor_slider = tk.Scale(window, from_ = 0, to = 180, orient = 'vertical', command = self.slider, length = 200, label = "Motor")
        
+        #self.output_box = tk.Text(window, height = 5, width = 17, state = "disabled")
         #self.STOP_button
         #self.input_button
         #self.output_button
         #self.auto
         #self.curve
         #self.runtime
+
+        self.window.bind("<Up>", lambda e: self.motor_slider.set(self.motor_slider.get()-10))
+        self.window.bind("<Down>", lambda e: self.motor_slider.set(self.motor_slider.get()+10))
         
 
 
@@ -81,7 +89,9 @@ class Thrust_Gui:
         self.file_menu.place(relx = 0.05, rely = 0.3)
         self.motor_slider.place(relx = 0.40, rely = 0.3)
         self.start_button.place(relx = 0.05, rely = 0.15)
-        self.output_menu.place(relx = 0.05, rely = 0.5)
+        self.output_menu.place(relx = 0.05, rely = 0.35)
+        #self.output_box.place(relx=0.05, rely = 0.4)
+
 
 
 
@@ -96,30 +106,37 @@ class Thrust_Gui:
                 tk.messagebox.showinfo (title = 'Error', message = 'No input file selected!', icon = 'warning')
                 return 0
             input_file = open(os.path.join(__location__, self.file_menu.get()), 'r')
-            input_list = [line .rstrip('\n') for line in input_file.readlines()] 
+            input_list = [line .rstrip('\n') for line in input_file.readlines()]
+            input_list.append("000000")
 
-            for line in input_list:
-                self.single_test(line)
-        #run AND record
+
+        for i in range (len(input_list)):
+            line = input_list[i]
+            duration = int(line[3:])
+            throttle = int(line[:3])
+            #self.output_box.insert(tk.END, 'Throttle:  {0:d}s, Duration: {1:d}%'.format(throttle, duration) GOD hates me
+            self.window.after(duration * 1000, self.send_throttle(throttle))
+            print(line)
+
+                
+
+        #recieve data from arduino
+        #take like ??? data points and take the average
+
 
         #write
-
-    def single_test(self, line):
-        throttle = line[:3]
-        duration = line[3:]
-        self.send_throttle(throttle)
         
 
-
-
-
+    def send_throttle(self, throttle):
+        string = 'X{0:d}'.format(throttle)
+        arduino.write(string.encode('utf-8'))
 
     def stop(self):
         '''
         Tell Arduino to turn thrust to zero
         '''
         string = 'X0'
-        #arduino.write(string.encode('utf-8'))
+        arduino.write(string.encode('utf-8'))
         
 
 
@@ -136,10 +153,10 @@ class Thrust_Gui:
             self.file_menu["state"] = "disabled"
         self.mode = new_mode
         
-    def send_throttle(self, throttle):
-        throttle = int(throttle) #for slider LOL or like just in case ig :) i would prefer to just pass ints... should i>??????
+    def slider(self, throttle):
+        throttle = int(throttle) #for slider LOL or like just in case ig :) i would prefer to just pass ints... should i>??????a number
         string = 'X{0:d}'.format(throttle)
-        #arduino.write(string.encode('utf-8'))
+        arduino.write(string.encode('utf-8'))
 
     def save(self):
         pass
@@ -150,12 +167,20 @@ root = tk.Tk()
 app = Thrust_Gui(root)
 root.mainloop()
 
-
+string = 'X0'
+arduino.write(string.encode('utf-8'))
 
 '''
+NOTES:
+- Uh calibrate by doing 100% then 0% and wait for the beeps lolol
+- The lag is caused by keyboard inputs :,)
+
+
+
+
+
 left and right arrow key to control sldier
-window.bind("<Left>", lambda e: slider_x.set(slider_x.get()-10))
-window.bind("<Right>", lambda e: slider_x.set(slider_x.get()+10))
+
 '''
 
 
