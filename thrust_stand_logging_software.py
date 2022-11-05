@@ -14,7 +14,9 @@ from tkinter import simpledialog
 import serial
 import os
 from openpyxl import Workbook
+from openpyxl import load_workbook
 import time
+import asyncio
 
 
 
@@ -24,8 +26,9 @@ import time
 
 
 '''---------------Set Up Arduino -----------------'''
-port = '/dev/cu.usbmodem11201' #You can find the port on the bottom right of
-baud_rate = 115200 #Idk it just has to match the Arduino's code (Prolly use 115200 or 9600 for now)
+port = '/dev/cu.usbmodem11301' #You can find the port on the bottom right of
+port = '/dev/cu.usbserial-1130' #You can find the port on the bottom right of
+baud_rate = 9600 #Idk it just has to match the Arduino's code (Prolly use 115200 or 9600 for now)
 arduino = serial.Serial(port, baud_rate)
 
 
@@ -62,23 +65,12 @@ class Thrust_Gui:
         self.mode_value.set(self.mode)
         self.select_mode = tk.OptionMenu(window, self.mode_value, *MODES, command = self.change_mode)
 
-        
-        #self.manual_button = tk.Button(window, command = self.foo)
         self.start_button = tk.Button(window, command = self.start, text = "Start" )
         self.motor_slider = tk.Scale(window, from_ = 0, to = 180, orient = 'vertical', command = self.slider, length = 200, label = "Motor")
-       
-        #self.output_box = tk.Text(window, height = 5, width = 17, state = "disabled")
-        #self.STOP_button
-        #self.input_button
-        #self.output_button
-        #self.auto
-        #self.curve
-        #self.runtime
 
         self.window.bind("<Up>", lambda e: self.motor_slider.set(self.motor_slider.get()-10))
         self.window.bind("<Down>", lambda e: self.motor_slider.set(self.motor_slider.get()+10))
         
-
 
         '''------------------Format Widgets-------------------'''
         self.start_button.config(width = BUTTON_WIDTH, height = BUTTON_HEIGHT)
@@ -90,8 +82,15 @@ class Thrust_Gui:
         self.motor_slider.place(relx = 0.40, rely = 0.3)
         self.start_button.place(relx = 0.05, rely = 0.15)
         self.output_menu.place(relx = 0.05, rely = 0.35)
-        #self.output_box.place(relx=0.05, rely = 0.4)
 
+
+        '''-----------------Work Book------------------'''
+        #file path idfk
+
+        #wb = load_workbook(filename = (os.path.join(__location__, 'Test_data')+'.xlsx'))
+        #ws = wb.active
+        #ws['A1'] = 42
+        #wb.save((os.path.join(__location__, 'Test_data'+'.xlsx')))
 
 
 
@@ -109,42 +108,34 @@ class Thrust_Gui:
             input_list = [line .rstrip('\n') for line in input_file.readlines()]
             input_list.append("000000")
 
-
+        #wb = load_workbook(filename = (os.path.join(__location__, 'Test_data')+'.xlsx'))
+        #ws = wb.active
         for i in range (len(input_list)):
             line = input_list[i]
             duration = int(line[3:])
             throttle = int(line[:3])
-            #self.output_box.insert(tk.END, 'Throttle:  {0:d}s, Duration: {1:d}%'.format(throttle, duration) GOD hates me
             self.window.after(duration * 1000, self.send_throttle(throttle))
-            print(line)
+            print('Test: ', line)   
+            data = arduino.readline()
+            print(data)
+            #ws['A' + str(i+1)] = line
+            #ws['B' + str(i+1)] = data[2]
+            #ws['C' + str(i+1)] = data[1]
+        print('finished')
+        #wb.save((os.path.join(__location__, 'Test_data'+'.xlsx')))
 
-                
-
-        #recieve data from arduino
-        #take like ??? data points and take the average
-
-
-        #write
-        
 
     def send_throttle(self, throttle):
         string = 'X{0:d}'.format(throttle)
         arduino.write(string.encode('utf-8'))
 
     def stop(self):
-        '''
-        Tell Arduino to turn thrust to zero
-        '''
         string = 'X0'
         arduino.write(string.encode('utf-8'))
         
 
 
     def change_mode(self, new_mode):
-        '''
-        Should turn certain widgets on and off based on test mode
-        '''
-
         if new_mode == MODES[0]:
             self.file_menu["state"] = "readonly"
         elif new_mode == MODES[1]:
@@ -162,13 +153,18 @@ class Thrust_Gui:
         pass
         #write to file lmfaooooo
 
+    def exit(self): #This is very much a useless roundabout way but like whatever works works
+        print("STOPPED")
+        self.stop()
+        self.window.destroy()
+
 '''------------------Run Code---------------'''
 root = tk.Tk()
 app = Thrust_Gui(root)
+
 root.mainloop()
 
-string = 'X0'
-arduino.write(string.encode('utf-8'))
+
 
 '''
 NOTES:

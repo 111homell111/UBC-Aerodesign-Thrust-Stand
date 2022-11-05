@@ -1,7 +1,8 @@
 from tkinter import *
 import serial
 
-port = '/dev/cu.usbmodem11101' #port u can find on bottom right of arduino screen
+#port = '/dev/cu.usbmodem11101' #port u can find on bottom right of arduino screen
+port = '/dev/cu.usbserial-1130' #port u can find on bottom right of arduino screen
 baud_rate = 115200 #idk it just has to match on arduino code (this or 9600)
 arduino = serial.Serial(port, baud_rate)
 
