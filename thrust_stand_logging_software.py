@@ -67,6 +67,7 @@ class Thrust_Gui:
         '''------------------Create Widgets-----------------'''
         self.infile_button = tk.Button(self.left_frame, command = self.select_infile, text = "Select input file")
         self.infile_display = tk.Text(self.left_frame, width = 15, height = 1.495)
+        self.outfiel_button = tk.Button(self.left_frame, command = self.select_outfile, text = "Select output file")
 
         self.mode_value = tk.StringVar(window)
         self.mode_value.set(self.mode)
@@ -121,7 +122,7 @@ class Thrust_Gui:
             input_file = open(os.path.join(__location__, self.file_menu.get()), 'r') #read input file
             input_list = [line .rstrip('\n') for line in input_file.readlines()]
             input_list.append("000000")
-
+        #Would prefer to ask for a file name first
         wb = load_workbook(filename = (os.path.join(__location__, 'Test_data')+'.xlsx'))
         ws = wb.active
         for i in range (len(input_list)):
@@ -151,7 +152,8 @@ class Thrust_Gui:
         
     def select_infile(self):
         filename = fd.askopenfilename(filetypes=[("text file","*.txt")])
-        self.infile_display.insert(tk.END, filename)
+        lastslash = filename.rindex("/") + 1
+        self.infile_display.insert(tk.END, filename[lastslash:])
     
     def get_readings(self):
         time.sleep(1);
